@@ -50,7 +50,10 @@ Files to avoid committing (generated / reproducible)
 If you want me to add a `.gitignore` and remove generated files from git index, I can do that next.
 
 Contact / Author
-- Nhóm: [Điền tên thành viên và MSSV]
+- Nhóm 8:
+	- 2310543 — HỒ ANH DŨNG <dung.hokhmt2k23@hcmut.edu.vn>
+	- 2312264 — LÊ THÀNH NGHĨA <nghia.lethanh58566@hcmut.edu.vn>
+	- 2312291 — VŨ TRỌNG NGHĨA <nghia.vutrong@hcmut.edu.vn>
 
 Deadline (course): May 15, 2026 23:59 (GMT+7)
 

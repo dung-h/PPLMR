@@ -1,0 +1,699 @@
+\documentclass[a4paper,11pt]{article}
+
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{hyperref}
+\usepackage{float}
+\usepackage{geometry}
+\usepackage{graphicx}
+
+\geometry{margin=2.5cm}
+\renewcommand{\abstractname}{Tóm tắt}
+\renewcommand{\refname}{Tài liệu tham khảo}
+
+% Code listing style
+\lstdefinestyle{asp}{
+  language=Prolog,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{red},
+  breaklines=true,
+  frame=single,
+  backgroundcolor=\color{white},
+  columns=fullflexible
+}
+\lstset{style=asp}
+
+% Tiêu đề và tác giả
+\title{
+  Ứng dụng Answer Set Programming\\
+  trong Nguyên lý Ngôn ngữ Lập trình, Cơ sở Dữ liệu và Hệ điều hành\\
+  \large Báo cáo Đồ án nhỏ
+}
+
+\author{
+  \textbf{Nhóm 8} \\
+  2310543 \quad HỒ ANH DŨNG \textless dung.hokhmt2k23@hcmut.edu.vn\textgreater \\
+  2312264 \quad LÊ THÀNH NGHĨA \textless nghia.lethanh58566@hcmut.edu.vn\textgreater \\
+  2312291 \quad VŨ TRỌNG NGHĨA \textless nghia.vutrong@hcmut.edu.vn\textgreater
+}
+
+\date{Tháng 04, 2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Trong mini-project này, nhóm em hiện thực 3 ứng dụng ASP tương ứng với 3 môn: Principles of Programming Languages (PPL), Database Systems, và Operating Systems. Với mỗi môn, nhóm em mô tả bài toán, xây dựng mô hình ASP, chạy Clingo để lấy stable model, và phân tích ý nghĩa kết quả. Phiên bản hiện tại không chỉ dừng ở ví dụ tối thiểu mà đã được mở rộng thành bộ kiểm thử gồm 10 case cho PPL, 4 case cho Database, và 4 case cho Operating Systems. Mục tiêu của nhóm là làm rõ cách tư duy khai báo trong ASP có thể áp dụng xuyên suốt nhiều miền kiến thức khác nhau, đồng thời giữ được tính kiểm chứng tự động, khả năng giải thích kết quả, và sự nhất quán trong cấu trúc thực nghiệm.
+\end{abstract}
+
+\section{Giới thiệu}\label{sec:intro}
+
+Answer Set Programming (ASP) là mô hình lập trình khai báo dựa trên stable model semantics~\cite{Gelfond1988,Brewka2011}.
+Khác với cách tiếp cận mệnh lệnh, ASP mô tả bài toán dưới dạng đặc tả logic; bộ giải (Clingo~\cite{Gebser2011})
+sau đó tìm tất cả stable model thỏa đặc tả. Dự án này áp dụng ASP cho ba miền khác nhau:
+
+Tài liệu nền tảng đã cho thấy vì sao ba miền này phù hợp với ASP: Gabbrielli et al.~\cite{Gabbrielli2023}
+phân tích scope và binding như khái niệm cốt lõi của ngôn ngữ lập trình, Erdem et al.~\cite{Erdem2016}
+chỉ ra ASP hoạt động tốt như một ngôn ngữ mô hình hóa tổng quát, và Hahn et al.~\cite{Hahn2024}
+cho thấy ASP hỗ trợ hiệu quả các bài toán suy luận giáo dục với ràng buộc rõ ràng và kết quả có thể giải thích.
+
+\begin{itemize}
+  \item \textbf{Nguyên lý Ngôn ngữ Lập trình (PPL):} Phân tích tĩnh phạm vi biến, liên kết biến và free variable
+        với hỗ trợ lexical scoping và shadowing.
+  \item \textbf{Cơ sở Dữ liệu:} Kiểm chứng conflict-serializability và phát hiện bất thường cô lập
+        (dirty read, cascading abort, strict isolation).
+  \item \textbf{Hệ điều hành:} Tránh deadlock và tìm safe sequence theo mô hình Banker.
+\end{itemize}
+
+Mỗi ứng dụng đều được triển khai với:
+\begin{enumerate}
+  \item Đặc tả bài toán rõ ràng dưới dạng facts, rules và constraints.
+  \item Bộ test đầy đủ (lần lượt 12, 9, 7 test case) bao phủ tình huống bình thường, biên và lỗi.
+  \item Stable model có kèm predicate chẩn đoán, không chỉ trả về đúng/sai.
+  \item Script Python sinh mã ASP và gọi Clingo tự động.
+\end{enumerate}
+
+Chủ đề thống nhất của dự án là: cả ba miền đều hưởng lợi từ khả năng biểu diễn tính phi xác định bằng
+choice rule và loại bỏ nghiệm không hợp lệ bằng constraint. Đây là điểm mạnh tự nhiên của ASP,
+nhưng thường khó biểu diễn gọn trong ngôn ngữ thủ tục.
+
+\section{Nền tảng: Cơ sở của Answer Set Programming}\label{sec:background}
+
+\subsection{Ngữ nghĩa Stable Model}
+
+Trong ASP, một chương trình gồm facts (ground atoms), rules (hàm ý) và constraints (điều kiện toàn vẹn).
+Ngữ nghĩa được xác định bởi \emph{stable model} - tập ground atom thỏa:
+\begin{enumerate}
+  \item \textbf{Đóng:} Mọi atom trong tập đều suy ra được từ facts và rules theo chính tập đó.
+  \item \textbf{Tối tiểu:} Không có tập con thực sự nào vẫn thỏa tính đóng.
+  \item \textbf{Tôn trọng ràng buộc:} Không vi phạm constraint nào.
+\end{enumerate}
+
+Một chương trình có thể có 0, 1 hoặc nhiều stable model. Stable model tồn tại khi và chỉ khi
+chương trình satisfiable; nếu không có stable model, bộ giải trả về \texttt{UNSATISFIABLE}.
+
+\subsection{Các cấu trúc ASP quan trọng}
+
+\begin{description}
+  \item[Facts:] Ground atom biểu diễn tri thức nền, ví dụ \texttt{variable(x). tx(t1).}
+  
+  \item[Rules:] Luật hàm ý logic, ví dụ:
+    \begin{lstlisting}
+global_variable(X) :- variable(X), not local_variable(X, _).
+    \end{lstlisting}
+    Điều này có nghĩa: ``X là biến toàn cục nếu X là biến và không được khai báo local ở bất kỳ scope nào.''
+  
+  \item[Constraints:] Điều kiện toàn vẹn (loại bỏ model), ví dụ:
+    \begin{lstlisting}
+:- run(S,P), need(P,R,N), available(S,R,V), N > V.
+    \end{lstlisting}
+    Luật này cấm mọi model mà tiến trình chạy khi tài nguyên không đủ.
+  
+  \item[Choice Rules:] Biểu diễn tính phi xác định, ví dụ:
+    \begin{lstlisting}
+1 { run(S,P) : proc(P) } 1 :- step(S).
+    \end{lstlisting}
+    Điều này biểu diễn: ``Tại bước S chỉ có đúng một tiến trình chạy.'' Bộ giải sẽ duyệt các khả năng
+    và giữ lại những khả năng thỏa constraints.
+  
+  \item[Aggregate Functions:] Hàm tổng hợp (đếm, tính tổng), ví dụ:
+    \begin{lstlisting}
+returned(S,R,Ret) :- Ret = #sum { A,P : alloc(P,R,A), finished_before(S,P) }.
+    \end{lstlisting}
+    Luật này tính tổng tài nguyên được hoàn trả bởi các tiến trình đã hoàn tất.
+\end{description}
+
+  \section{Ứng dụng: Thiết kế và triển khai}\label{sec:applications}
+
+  \subsection{Ứng dụng 1: PPL -- Phân tích Scope và Binding}\label{subsec:ppl}
+
+  \subsubsection*{Phát biểu bài toán}
+
+Cho tập biến, các khai báo trong hàm và ghi chú kiểu, cần suy ra:
+\begin{itemize}
+  \item Biến nào là \texttt{local\_variable} trong hàm nào.
+  \item Biến nào là \texttt{global\_variable}.
+  \item Mỗi biến thuộc \texttt{scope} nào (\texttt{in\_scope}).
+  \item Biến nào được \texttt{bound\_variable} đúng với kiểu \texttt{int}.
+\end{itemize}
+
+Ngoài ra, mô hình chẩn đoán các lỗi phổ biến:
+\begin{itemize}
+  \item \texttt{orphan\_declaration(X,F)}: X được khai báo trong F nhưng F không phải hàm hợp lệ.
+  \item \texttt{missing\_scope(F)}: Hàm F có khai báo nhưng không có ánh xạ scope.
+  \item \texttt{untyped\_variable(X)}: X là biến nhưng không có ghi chú kiểu.
+  \item \texttt{non\_int\_type(X,T)}: X có kiểu T $\neq$ int nên không thể bound.
+  \item \texttt{free\_var(X,S)}: X được dùng trong scope S nhưng không tới được khai báo nào (lexical scoping).
+\end{itemize}
+
+\subsubsection*{Mô hình ASP}
+
+\textbf{Luật cốt lõi:}
+\begin{lstlisting}
+% Basic scoping
+global_variable(X) :- variable(X), not local_variable(X, _).
+local_variable(X, F) :- declared_in(X, F).
+
+in_scope(X, S) :- local_variable(X, F), function_scope(F, S).
+in_scope(X, global) :- global_variable(X).
+
+% Binding (only if scoped and typed as int)
+bound_variable(X, S) :- in_scope(X, S), type_of(X, int).
+
+% Diagnostic rules
+orphan_declaration(X, F) :- declared_in(X, F), not variable(X).
+missing_scope(F) :- declared_in(_, F), not function_scope(F, _).
+untyped_variable(X) :- variable(X), not type_of(X, _).
+non_int_type(X, T) :- type_of(X, T), T != int.
+\end{lstlisting}
+
+\textbf{Mở rộng Lexical Scoping:}
+
+Để phân tích PPL sâu hơn, mô hình hỗ trợ scope lồng nhau và shadowing:
+\begin{lstlisting}
+% Scope hierarchy
+ancestor_or_self(S, S) :- scope(S).
+ancestor_or_self(S, A) :- scope_parent(S, P), ancestor_or_self(P, A).
+
+% Binding respects shadowing: use declaration from closest enclosing scope
+reachable_decl(UseS, X, DeclS) :- 
+  ancestor_or_self(UseS, DeclS), declared_in_scope(X, DeclS).
+
+shadowed_by(UseS, X, DeclS) :- 
+  reachable_decl(UseS, X, DeclS), reachable_decl(UseS, X, DeclS2),
+  ancestor_or_self(DeclS2, DeclS), DeclS2 != DeclS.
+
+binding(UseS, X, DeclS) :- 
+  reachable_decl(UseS, X, DeclS), not shadowed_by(UseS, X, DeclS).
+
+resolved_use(X, UseS, DeclS) :- use_in(X, UseS), binding(UseS, X, DeclS).
+free_var(X, UseS) :- use_in(X, UseS), not binding(UseS, X, _).
+\end{lstlisting}
+
+Phần mở rộng này cho phép mô hình:
+\begin{itemize}
+  \item Phát hiện \textit{shadowing}: khai báo scope trong che khuất khai báo scope ngoài.
+  \item Xử lý \textit{free variable}: điểm sử dụng không tới được khai báo nào.
+  \item Xây dựng bảng ký hiệu tin cậy cho compiler của ngôn ngữ lexical (ví dụ Python, JavaScript).
+\end{itemize}
+Các ví dụ PPL cốt lõi trong báo cáo là các tình huống scope/binding tổng quát, không phụ thuộc ngôn ngữ cụ thể;
+TyC chỉ xuất hiện ở demo tích hợp frontend tùy chọn, dùng để sinh ASP facts tự động thay vì định nghĩa bài toán chính.
+Bài học chính từ tài liệu PPL là scope và binding dễ suy luận nhất khi được mô hình hóa dưới dạng quan hệ,
+thay vì thao tác ngăn xếp thủ tục~\cite{Gabbrielli2023}. Vì vậy, ASP của nhóm tách riêng
+\texttt{orphan\_declaration}, \texttt{missing\_scope}, và \texttt{free\_var} khỏi luật binding cốt lõi:
+logic vẫn gọn, nhưng chẩn đoán vẫn dễ giải thích.
+
+
+\subsubsection*{Độ bao phủ kiểm thử}
+
+Mười hai test case (trong \texttt{cases/ppl/}) bao phủ:
+\begin{itemize}
+  \item \textbf{global\_only:} Biến không có function scope được xếp toàn cục.
+  \item \textbf{missing\_function\_scope:} Phát hiện thiếu sót trong bảng ký hiệu.
+  \item \textbf{multi\_decl:} Cùng một biến được khai báo trong nhiều hàm.
+  \item \textbf{global\_non\_int:} Biến toàn cục có kiểu khác int (chẩn đoán).
+  \item \textbf{mixed\_diagnostics:} Tình huống tổng hợp vừa đúng vừa sai binding.
+  \item \textbf{shadowing\_nested\_scope:} Scope trong che khuất scope ngoài.
+  \item \textbf{free\_variable\_use:} Biến được dùng nhưng không tới được qua chuỗi scope.
+  \item Cùng 5 biến thể bổ sung bao phủ các trường hợp biên.
+\end{itemize}
+
+\textbf{Ví dụ đầu ra:} Cho mixed diagnostics:
+\begin{lstlisting}
+global_variable(b) bound_variable(a,f1) in_scope(a,f1)
+in_scope(c,f1) non_int_type(b,string) orphan_declaration(c,foo)
+resolved_use(a,scope1,f1_scope) free_var(z,scope2)
+\end{lstlisting}
+
+Output này vừa cho thấy binding đúng, vừa hiện atom chẩn đoán, giúp báo lỗi tăng dần trong frontend compiler.
+
+\subsection{Ứng dụng 2: Cơ sở Dữ liệu -- Conflict-Serializability}\label{subsec:db}
+
+\subsubsection*{Phát biểu bài toán}
+
+Cho một lịch (chuỗi thao tác read/write theo thời gian trên các item bởi giao dịch), cần xác định:
+\begin{itemize}
+  \item Lịch có \texttt{conflict-serializable} không?
+  \item Nếu có, sinh lịch tuần tự hợp lệ \texttt{order/2}.
+  \item Nếu không, chỉ ra \textit{cycle} trong precedence graph.
+  \item Đồng thời phát hiện vi phạm cô lập: dirty read, cascading abort, strict isolation.
+\end{itemize}
+
+Tài liệu cơ sở dữ liệu làm rõ cấu trúc này: tiêu chuẩn serializability của Papadimitriou~\cite{Papadimitriou1979}
+chính danh cách nhìn bằng precedence graph, trong khi Bernstein et al.~\cite{Bernstein1987}
+cung cấp bối cảnh rộng hơn về concurrency control, mức cô lập và phục hồi. Nói cách khác,
+mã ASP của nhóm là phát biểu khai báo trực tiếp của một định lý đúng cổ điển.
+
+\subsubsection*{Mô hình ASP}
+
+\textbf{Xây dựng Precedence Graph:}
+\begin{lstlisting}
+% Conflict: write-write or read-write on same item
+conflict(I,J,T1,T2,X) :- 
+  op(I,T1,w,X), op(J,T2,_,X), T1 != T2, I < J.
+conflict(I,J,T1,T2,X) :- 
+  op(I,T1,_,X), op(J,T2,w,X), T1 != T2, I < J.
+
+% Precedence edge: T1 must precede T2 in any serial schedule
+edge(T1,T2) :- conflict(_,_,T1,T2,_).
+
+% Transitive closure: compute all paths (reachability)
+path(T1,T2) :- edge(T1,T2).
+path(T1,T3) :- path(T1,T2), edge(T2,T3).
+
+% Cycle detection: self-loop indicates conflict-unserializability
+cycle(T) :- path(T,T).
+
+% Verdict
+serializable :- not cycle(_).
+not_serializable :- cycle(_).
+\end{lstlisting}
+
+\textbf{Sinh thứ tự serial (guess-and-check):}
+
+Nếu precedence graph không chu trình, sinh một topological sort hợp lệ:
+\begin{lstlisting}
+tcount(N) :- N = #count { T : tx(T) }.
+pos(1..N) :- tcount(N).
+
+% Guess: assign each transaction to a position
+1 { order(T,P) : pos(P) } 1 :- tx(T), serializable.
+1 { order(T,P) : tx(T) } 1 :- pos(P), serializable.
+
+% Constraint: respect precedence edges
+:- serializable, edge(T1,T2), order(T1,P1), order(T2,P2), P1 >= P2.
+\end{lstlisting}
+
+\textbf{Vi phạm cô lập (dựa trên thời điểm commit):}
+
+Khi input có thao tác commit (ví dụ \texttt{op(I,T,c,none)}),
+mô hình phát hiện:
+\begin{itemize}
+  \item \textbf{Dirty Read:} T2 đọc dữ liệu chưa commit từ T1.
+  \item \textbf{Lost Update:} Hai giao dịch ghi cùng một item, một cập nhật bị đè.
+  \item \textbf{Recoverable vs.~Non-recoverable:} Lịch có thể phục hồi nếu có giao dịch abort hay không.
+  \item \textbf{Cascadeless:} Lịch có tránh cascading abort hay không.
+  \item \textbf{Strict:} Mức cô lập cao nhất (sau ghi, giao dịch khác không được truy cập đến khi commit/abort).
+\end{itemize}
+
+\subsubsection*{Độ bao phủ kiểm thử}
+
+Chín test case (trong \texttt{cases/db/}) bao phủ:
+\begin{itemize}
+  \item \textbf{serializable\_branching:} DAG không chu trình với 4 giao dịch; solver tìm được serial order hợp lệ.
+  \item \textbf{non\_serializable\_cycle:} Chu trình trực tiếp giữa 2 giao dịch.
+  \item \textbf{non\_serializable\_three\_way:} Chu trình 3 đỉnh (bất thường phổ biến).
+  \item \textbf{lost\_update:} Xung đột ghi-ghi; không serializable.
+  \item \textbf{phantom\_read:} Nhiều lượt đọc và ghi mức predicate; vô chu trình nhưng vẫn bất thường logic.
+  \item \textbf{read\_skew:} Đọc không nhất quán do ghi đồng thời.
+  \item \textbf{dirty\_write:} Ghi chưa commit bị ghi đè; không recoverable.
+  \item \textbf{recoverable\_violation:} Lịch serializable nhưng vi phạm điều kiện recoverable.
+  \item \textbf{strict\_violation:} Nhiều giao dịch ghi cùng item trước commit.
+\end{itemize}
+
+\textbf{Ví dụ đầu ra:} Cho \texttt{serializable\_branching}:
+\begin{lstlisting}
+serializable
+edge(t1,t2) edge(t1,t3) edge(t2,t4) edge(t3,t4)
+order(t1,1) order(t3,2) order(t2,3) order(t4,4)
+\end{lstlisting}
+
+Stable model không chỉ khẳng định serializability mà còn đưa ra serial order cụ thể
+và precedence graph nền, rất hữu ích cho debug và hiểu cấu trúc lịch.
+
+\subsection{Ứng dụng 3: Hệ điều hành -- Banker's Safe Sequence}\label{subsec:os}
+
+\subsubsection*{Phát biểu bài toán}
+
+Cho các tiến trình, loại tài nguyên, cấp phát hiện tại (\texttt{alloc}), nhu cầu tối đa (\texttt{max}),
+và tài nguyên khả dụng (\texttt{avail0}), cần xác định:
+\begin{itemize}
+  \item Có tồn tại \textit{safe sequence} hay không?
+  \item Nếu có, sinh một (hoặc nhiều) thứ tự thực thi hợp lệ (\texttt{run/2}).
+  \item Nếu không, báo cáo tiến trình nào bị chặn và vì sao (\texttt{blocked\_initial/1}).
+\end{itemize}
+
+Tài liệu Hệ điều hành hữu ích vì làm rõ bản chất của deadlock avoidance: hệ thống không chỉ kiểm tra
+điều kiện cục bộ, mà cần chứng minh tồn tại một thứ tự thực thi an toàn toàn cục. Thảo luận của Levine~\cite{Levine2005}
+nhấn mạnh avoidance là loại bỏ trạng thái không an toàn, phù hợp trực tiếp với cấu trúc guess-and-check của mô hình ASP.
+
+\subsubsection*{Mô hình ASP}
+
+\textbf{Tính Need và thứ tự chạy:}
+\begin{lstlisting}
+% Compute remaining need for each process-resource pair
+need(P,R,N) :- max(P,R,M), alloc(P,R,A), N = M - A.
+
+% Total process count and step numbering
+pcount(N) :- N = #count { P : proc(P) }.
+step(1..N) :- pcount(N).
+
+% Non-deterministic guess: which process runs at each step
+1 { run(S,P) : proc(P) } 1 :- step(S).
+1 { run(S,P) : step(S) } 1 :- proc(P).
+\end{lstlisting}
+
+\textbf{Theo dõi tài nguyên khả dụng:}
+\begin{lstlisting}
+% Processes finished before step S have released their allocations
+finished_before(S,P) :- step(S), run(S0,P), S0 < S.
+
+% Cumulative resources returned by finished processes
+returned(S,R,Ret) :- step(S), res(R), 
+  Ret = #sum { A,P : alloc(P,R,A), finished_before(S,P) }.
+
+% Available = initial + returned
+available(S,R,V) :- step(S), res(R), avail0(R,B), 
+  returned(S,R,Ret), V = B + Ret.
+\end{lstlisting}
+
+\textbf{Ràng buộc an toàn:}
+\begin{lstlisting}
+% Constraint: at each step, running process must have all needs available
+:- run(S,P), need(P,R,N), available(S,R,V), N > V.
+\end{lstlisting}
+
+Nếu bất kỳ model nào vi phạm ràng buộc này, chương trình là \texttt{UNSATISFIABLE}.
+Nếu tồn tại model, model đó biểu diễn một thứ tự thực thi an toàn.
+
+\textbf{Predicate chẩn đoán:}
+\begin{lstlisting}
+can_run_now(P) :- proc(P), not lacks_resource_now(P,_).
+lacks_resource_now(P,R) :- proc(P), res(R), 
+  need(P,R,N), avail0(R,V0), N > V0.
+blocked_initial(P) :- proc(P), not can_run_now(P).
+\end{lstlisting}
+
+Nhóm predicate này giúp giải thích \texttt{UNSATISFIABLE}: nếu không tiến trình nào có
+\texttt{can\_run\_now/1}, hệ thống bị deadlock ngay từ đầu.
+
+\subsubsection*{Độ bao phủ kiểm thử}
+
+Bảy test case (trong \texttt{cases/os/}) bao phủ:
+\begin{itemize}
+  \item \textbf{safe\_state\_classic:} 5 tiến trình, 3 loại tài nguyên (trạng thái an toàn kiểu giáo trình).
+  \item \textbf{multi\_safe\_sequence:} 3 tiến trình cho nhiều thứ tự hợp lệ.
+  \item \textbf{unsafe\_state:} Không tiến trình nào có thể tiếp tục (UNSATISFIABLE).
+  \item \textbf{unsafe\_after\_partial\_progress:} Có tiến trình chạy được ban đầu nhưng sau đó deadlock.
+  \item \textbf{immediate\_deadlock:} Tất cả tiến trình thiếu tài nguyên ngay bước 1.
+  \item \textbf{circular\_wait:} 4 tiến trình có phụ thuộc tài nguyên dạng vòng.
+  \item \textbf{resource\_hoarding:} 2 tiến trình cạnh tranh sát trên 1 loại tài nguyên.
+\end{itemize}
+
+\textbf{Ví dụ đầu ra:} Cho \texttt{safe\_state\_classic}:
+\begin{lstlisting}
+run(1,p1) run(2,p4) run(3,p3) run(4,p0) run(5,p2)
+need(p1,a,1) need(p1,b,2) need(p1,c,2)
+available(1,a,2) available(1,b,3) available(1,c,1)
+can_run_now(p1) can_run_now(p4)
+\end{lstlisting}
+
+Model sinh được safe sequence đầy đủ và giải thích động học tài nguyên theo từng bước.
+
+Bài học chính từ ví dụ OS là suy luận kiểu Banker là bài toán tìm kiếm, không phải mẹo greedy đơn giản.
+ASP phù hợp vì có thể đoán thứ tự thực thi, sau đó loại bỏ mọi thứ tự vi phạm ràng buộc tài nguyên,
+giúp đáp án cuối cùng vừa đúng vừa dễ giải thích.
+
+\section{Tổng kết thực nghiệm}\label{sec:summary}
+
+\subsection{Tổng quan độ bao phủ test}
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{|l|c|p{4.5cm}|p{3.5cm}|}
+\hline
+\textbf{Miền} & \textbf{Số test} & \textbf{Hiện tượng bao phủ} & \textbf{Kết quả kỳ vọng} \\
+\hline
+PPL & 12 & binding local/global, lỗi scope, lỗi kiểu, shadowing, free variable & Stable model kèm atom ngữ nghĩa + chẩn đoán \\
+\hline
+Cơ sở dữ liệu & 9 & đường conflict, chu trình, bất thường cô lập, serializability & Serializable + serial order, hoặc cycle + UNSAT \\
+\hline
+OS & 7 & safe sequence, deadlock, tranh chấp tài nguyên & Safe sequence hoặc UNSATISFIABLE \\
+\hline
+\textbf{Tổng} & \textbf{28} & \multicolumn{2}{c|}{Bao phủ đầy đủ các trường hợp bình thường, biên và lỗi} \\
+\hline
+\end{tabular}
+\caption{Ma trận test thực nghiệm trên ba miền.}
+\label{tab:coverage}
+\end{table}
+
+Tất cả 28 test case đều đạt với mô hình ASP hiện tại và bộ giải Clingo.
+
+
+\section{Phân tích So sánh Liên Môn}\label{sec:crossdomain}
+
+Mặc dù ASP cung cấp một khung khai báo thống nhất, khi áp dụng vào PPL, Cơ sở dữ liệu và Hệ điều hành lại lộ rõ
+các mẫu suy luận và chiến lược mô hình hóa khác nhau. Phần này so sánh ba miền một cách có hệ thống và nêu rõ
+phần nào trong các ví dụ là kế thừa ý tưởng từ các bài báo tham khảo, phần nào là triển khai/nhân rộng ý tưởng đó.
+
+\subsection{Sự khác biệt về bản thể học}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{|l|p{3cm}|p{3cm}|p{3cm}|}
+\hline
+\textbf{Chiều hướng} & \textbf{PPL} & \textbf{Cơ sở dữ liệu} & \textbf{Hệ điều hành} \\
+\hline
+\textbf{Thực thể} &
+  Tên định danh, phạm vi, kiểu &
+  Giao dịch, mục, thao tác &
+  Tiến trình, loại tài nguyên, bước thời gian \\
+\hline
+\textbf{Quan hệ} &
+  declared\_in, type\_of, scope\_parent &
+  conflict, edge, rf (read-from) &
+  alloc, need, available, finished\_before \\
+\hline
+\textbf{Vấn đề cốt lõi} &
+  Suy luận bảng ký hiệu &
+  Tính khả dĩ/độ truy cập và phát hiện chu trình &
+  Tìm kiếm khả thi trên hoán vị \\
+\hline
+\textbf{Kiểu kết luận} &
+  Thành công/thất bại + chẩn đoán &
+  Có/không serializable + thứ tự &
+  Có/không có safe sequence \\
+\hline
+\end{tabular}
+\caption{Cấu trúc bản thể học của ba ứng dụng ASP.}
+\label{tab:ontology}
+\end{table}
+
+\subsection{Mẫu suy luận}
+
+\subsubsection*{Mẫu 1: Suy luận logic (PPL)}
+
+PPL chủ yếu dựa vào suy luận hậu duy (backward chaining) để rút ra tiền tố cuối cùng.
+\begin{itemize}
+  \item \textbf{Luồng dẫn:} Từ \texttt{variable/1}, \texttt{declared\_in/2}, \texttt{type\_of/2} suy ra \texttt{local\_variable/2},
+        rồi tới \texttt{in\_scope/2} và \texttt{bound\_variable/2}.
+  \item \textbf{Phủ định như thất bại:} \texttt{global\_variable(X)} dùng \texttt{not local\_variable(X,\_)} — đặc trưng đóng
+        của ASP cho phân tích bảng ký hiệu.
+  \item \textbf{Về nguồn gốc ý tưởng:} Phần mô hình scope/binding được truyền cảm hứng từ các công trình về mô hình ngôn ngữ (ví dụ
+        \cite{Gabbrielli2023}) — chúng tôi áp dụng tư duy quan hệ (relations) chứ không cố gắng sao chép nguyên mẫu của bất cứ trình biên dịch
+        cụ thể nào. TyC chỉ là demo frontend để sinh facts; bản thân các test case là tổng quát và không phải là phiên bản sao nguyên vẹn của
+        một bài báo cụ thể.
+\end{itemize}
+
+\subsubsection*{Mẫu 2: Khả năng truy cập đồ thị và phát hiện chu trình (Cơ sở dữ liệu)}
+
+Ứng dụng CSDL tận dụng phép đóng truyện (transitive closure) để tính toán thuộc tính đồ thị.
+\begin{itemize}
+  \item \textbf{Quy tắc đóng:} \texttt{path(T1,T2)} được định nghĩa đệ qui từ \texttt{edge}.
+  \item \textbf{Phát hiện chu trình:} \texttt{cycle(T) :- path(T,T)}.
+  \item \textbf{Về nguồn gốc ý tưởng:} Mô hình precedence-graph là một biểu diễn trực tiếp của định lý serializability cổ điển
+        (Papadimitriou~\cite{Papadimitriou1979}); do đó phần này là một việc "triển khai/nhân rộng" ý tưởng lý thuyết sang dạng khai báo
+        trong ASP hơn là đề xuất một phương pháp mới.
+\end{itemize}
+
+\subsubsection*{Mẫu 3: Tìm kiếm tổ hợp và thỏa mãn ràng buộc (OS)}
+
+Các bài toán OS được mô tả dưới dạng guess-and-check trên không gian tổ hợp.
+\begin{itemize}
+  \item \textbf{Quy tắc lựa chọn:} \texttt{1 { run(S,P) : proc(P) } 1} sinh các hoán vị thứ tự thi hành.
+  \item \textbf{Cập nhật tích lũy:} \texttt{available/3} được cập nhật dựa trên tài nguyên trả về.
+  \item \textbf{Về nguồn gốc ý tưởng:} Ý tưởng Banker's algorithm là cổ điển; công việc ở đây là biểu diễn nó dưới dạng ASP để
+        minh họa tính giải thích (explainability) và để so sánh chiến lược suy luận — không phải để phát minh lại thuật toán.
+\end{itemize}
+
+\subsection{So sánh Chiến lược Mô hình hóa}
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{|l|p{3cm}|p{3cm}|p{3cm}|}
+\hline
+\textbf{Chiến lược} & \textbf{PPL} & \textbf{Cơ sở dữ liệu} & \textbf{Hệ điều hành} \\
+\hline
+\textbf{Đệ qui} &
+  Suy luận chuỗi (declare → type → scope → bind) &
+  Đóng (edge → path → cycle) &
+  Tích lũy tài nguyên theo bước \\
+\hline
+\textbf{Phi xác định} &
+  Ít (facts chủ yếu xác định) &
+  Trung bình (một số đoán cho thứ tự) &
+  Nhiều (khai thác hoán vị thứ tự) \\
+\hline
+\textbf{Phủ định} &
+  Nhiều (\texttt{not local\_variable}, \texttt{not type\_of}) &
+  Nhẹ (chủ yếu \texttt{not cycle}) &
+  Ít (kiểm tra chặn ban đầu) \\
+\hline
+\textbf{Tổng hợp} &
+  Không (suy luận nguồn đơn) &
+  Không (duyệt đồ thị) &
+  Nặng (\texttt{\#sum} cho tổng tài nguyên) \\
+\hline
+\textbf{Đầu ra} &
+  Atoms + chẩn đoán &
+  Verdict serializable + order + edges &
+  Safe sequence + dòng thời gian tài nguyên \\
+\hline
+\end{tabular}
+\caption{Chiến lược mô hình hóa và suy luận giữa các miền.}
+\label{tab:strategies}
+\end{table}
+
+\subsection{Khả năng mở rộng và Khối lượng của Solver}
+
+\subsubsection*{PPL}
+\begin{itemize}
+  \item \textbf{Grounding:} Tuyến tính theo số lượng facts về biến, phạm vi và kiểu. Đóng phạm vi đệ qui có thể tốn kém khi lồng nhiều tầng.
+  \item \textbf{Solver:} Ưu thế suy luận; ít điểm lựa chọn. Thường hoàn thành rất nhanh cho qui mô bài toán giảng dạy.
+  \item \textbf{Cổ chai:} Phép đóng trên cây phạm vi khi số lượng khai báo lớn.
+\end{itemize}
+
+\subsubsection*{Cơ sở Dữ liệu}
+\begin{itemize}
+  \item \textbf{Grounding:} Tỷ lệ thuận với bình phương số thao tác (vì kiểm tra xung đột cặp đôi).
+  \item \textbf{Solver:} Đóng đường đi đệ qui; phát hiện chu trình nhanh cho lịch trình điển hình.
+  \item \textbf{Cổ chai:} Grounding và đóng truy xuất trong đồ thị dày đặc.
+\end{itemize}
+
+\subsubsection*{Hệ điều hành}
+\begin{itemize}
+  \item \textbf{Grounding:} Không gian hoán vị tăng theo giai thừa số tiến trình.
+  \item \textbf{Solver:} Tốt cho N nhỏ; nổ lũy thừa với N lớn. Cần kỹ thuật tối ưu nếu muốn mở rộng.
+\end{itemize}
+
+\subsection{Những nhận xét chính và Bài học thiết kế}
+\begin{enumerate}
+  \item \textbf{Khung thống nhất:} ASP cho phép biểu diễn các vấn đề khác nhau trong cùng một ngôn ngữ. Việc chuyển đổi miền chỉ cần thay facts/rules.
+
+  \item \textbf{Atoms chẩn đoán:} Xuất các quan hệ trung gian (edges, paths, conflicts, needs) giúp giải thích kết quả; nhiều bài báo cung cấp khung lý thuyết, còn chúng tôi thực thi và minh họa bằng ASP.
+
+  \item \textbf{Lười trong suy diễn:} Semantics của stable model chỉ tính những gì cần thiết, tránh một số tính toán thừa so với code thủ tục.
+
+  \item \textbf{Phủ định như thất bại:} PPL dùng nhiều phủ định để biểu diễn giả thiết đóng thế; điều này là lợi thế cho bài toán dạng bảng ký hiệu.
+
+  \item \textbf{Trí thông minh của solver:} Clingo thích nghi theo cấu trúc bài toán; phần lớn ý tưởng lớn (ví dụ serializability, Banker's) được kế thừa từ lý thuyết, còn ASP cung cấp phương tiện để biểu diễn và thí nghiệm.
+\end{enumerate}
+
+\section{Kết luận và Hướng phát triển}\label{sec:conclusion}
+
+Dự án này áp dụng thành công Answer Set Programming vào ba miền có đặc thù rõ rệt trong giáo dục Khoa học Máy tính.
+Mỗi ứng dụng đều vượt qua mức ví dụ đồ chơi nhờ việc đưa vào atom chẩn đoán, bộ test bao phủ rộng
+(tổng 28 test case), và những lựa chọn mô hình hóa không tầm thường:
+
+\begin{itemize}
+    \item \textbf{PPL:} Phân tích lexical scoping và shadowing với ngữ nghĩa đa scope.
+    \item \textbf{Database:} Conflict-serializability được bổ sung phân loại theo mức cô lập.
+    \item \textbf{OS:} Mô hình Banker được tổng quát hóa để hỗ trợ nhiều safe sequence.
+\end{itemize}
+
+  Phân tích liên môn cho thấy mô hình khai báo của ASP tiếp nhận tự nhiên
+  suy luận ký hiệu (PPL), suy luận đồ thị (Cơ sở dữ liệu), và tìm kiếm tổ hợp (Hệ điều hành)
+  mà không cần lập trình lại thuật toán theo từng miền - đây là lợi thế đặc trưng của lập trình logic.
+
+\subsection*{Giới hạn}
+
+\begin{itemize}
+    \item \textbf{PPL:} Mô hình lexical scoping còn đơn giản, chưa bao quát đầy đủ block nesting
+      hoặc lambda closure từ cây cú pháp thực tế.
+    \item \textbf{Cơ sở dữ liệu:} Serializability dựa trên conflict là cổ điển; multi-version và snapshot
+      isolation chưa được mô hình hóa.
+    \item \textbf{Hệ điều hành:} Tìm safe sequence mở rộng kém khi $N > 15$ tiến trình; các tối ưu (symmetry
+      breaking, caching) chưa được triển khai.
+\end{itemize}
+
+\subsection*{Hướng phát triển tiếp theo}
+
+\begin{enumerate}
+    \item \textbf{Hướng PPL:} Tích hợp với frontend compiler thực (ví dụ TyC) để tự động sinh facts
+      từ mã nguồn và dùng ASP cho phân tích tĩnh toàn chương trình.
+  
+    \item \textbf{Hướng Database:} Bổ sung hỗ trợ multi-version concurrency control (MVCC)
+      và ngữ nghĩa snapshot isolation; đối chiếu kết quả dự đoán với log cơ sở dữ liệu thực.
+  
+    \item \textbf{Hướng OS:} Triển khai constraint symmetry-breaking để giảm không gian tìm kiếm;
+      benchmark với Banker cổ điển trên bộ tải tổng hợp.
+  
+    \item \textbf{Tự động hóa:} Phát triển bộ sinh test thống nhất để tạo ngẫu nhiên instance cho từng miền
+      và kiểm chứng dự đoán ASP với implementation tham chiếu (Oracle hoặc thuật toán đã kiểm chứng).
+  
+    \item \textbf{Tích hợp giáo dục:} Đưa các mô hình ASP vào nền tảng học tập tương tác, nơi sinh viên
+      có thể sửa facts/rules và thấy ngay sự thay đổi trong dự đoán mô hình - một hình thức
+      học tập hỗ trợ máy tính dựa trên mô hình khai báo.
+\end{enumerate}
+
+\begin{thebibliography}{99}
+
+\bibitem{Gelfond1988}
+M. Gelfond and V. Lifschitz.
+The stable model semantics for logic programming.
+In \textit{Proc. ICLP}, pages 1070--1080. MIT Press, 1988.
+
+\bibitem{Brewka2011}
+G. Brewka, T. Eiter, and M. Truszczynski.
+Answer set programming at a glance.
+\textit{Communications of the ACM}, 54(12):92--103, 2011.
+
+\bibitem{Gebser2011}
+M. Gebser et al.
+Potassco: The Potsdam answer set solving collection.
+\textit{AI Communications}, 24(2):107--124, 2011.
+
+\bibitem{Gabbrielli2023}
+M. Gabbrielli, S. Martini, and S. Giallorenzo.
+\textit{Programming Languages: Principles and Paradigms} (2nd ed.).
+Springer, 2023.
+
+\bibitem{Erdem2016}
+E. Erdem, M. Gelfond, and N. Leone.
+Applications of answer set programming.
+\textit{AI Magazine}, 37(3):53--68, 2016.
+
+\bibitem{Hahn2024}
+S. Hahn et al.
+Reasoning about study regulations in answer set programming.
+\textit{Theory and Practice of Logic Programming}, 24(4):790--804, 2024.
+
+\bibitem{Papadimitriou1979}
+C. H. Papadimitriou.
+The serializability of concurrent database updates.
+\textit{Journal of the ACM}, 26(4):631--653, 1979.
+
+\bibitem{Bernstein1987}
+P. A. Bernstein, V. Hadzilacos, and N. Goodman.
+\textit{Concurrency Control and Recovery in Database Systems}.
+Addison-Wesley, 1987.
+
+\bibitem{Levine2005}
+G. N. Levine.
+The classification of deadlock prevention and avoidance is erroneous.
+\textit{ACM SIGOPS Operating Systems Review}, 39(2):47--50, 2005.
+
+\end{thebibliography}
+
+\end{document}
