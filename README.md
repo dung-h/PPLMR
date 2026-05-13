@@ -6,7 +6,7 @@ Mini-project này triển khai **3 ứng dụng Answer Set Programming (ASP)** t
 - **Database Systems:** kiểm tra **conflict-serializability** bằng precedence graph; bản mở rộng phân tích **recoverable / cascadeless / strict** khi input có `commit`.
 - **Operating Systems:** kiểm tra **safe state** và sinh **safe sequence** theo phong cách *Banker’s algorithm* (kèm atom chẩn đoán khi UNSAT).
 
-## Nhóm tác giả
+## THÀNH VIÊN
 
 Nhóm 8:
 
