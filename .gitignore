@@ -1,0 +1,10 @@
+﻿.venv/
+vendor/tyc/src/**/__pycache__/
+vendor/tyc/build/__pycache__/
+vendor/tyc/src/.DS_Store
+__pycache__/
+*.pyc
+AGENTS.md
+report/*.aux
+report/*.log
+report/*.out
