@@ -6,7 +6,13 @@ Mini-project này triển khai **3 ứng dụng Answer Set Programming (ASP)** t
 - **Database Systems:** kiểm tra **conflict-serializability** bằng precedence graph; bản mở rộng phân tích **recoverable / cascadeless / strict** khi input có `commit`.
 - **Operating Systems:** kiểm tra **safe state** và sinh **safe sequence** theo phong cách *Banker’s algorithm* (kèm atom chẩn đoán khi UNSAT).
 
-Trọng tâm của repo là cách mô hình hóa bằng **facts/rules/constraints**, chạy **Clingo** để lấy stable model, và đọc các predicate đầu ra như một “báo cáo chẩn đoán” thay vì chỉ đúng/sai.
+## Nhóm tác giả
+
+Nhóm 8:
+
+- 2310543 — HỒ ANH DŨNG — dung.hokhmt2k23@hcmut.edu.vn
+- 2312264 — LÊ THÀNH NGHĨA — nghia.lethanh58566@hcmut.edu.vn
+- 2312291 — VŨ TRỌNG NGHĨA — nghia.vutrong@hcmut.edu.vn
 
 ## Cấu trúc thư mục
 
@@ -29,7 +35,6 @@ Trọng tâm của repo là cách mô hình hóa bằng **facts/rules/constraint
   - Nếu bạn có sẵn `clingo` binary trong PATH thì cũng chạy được.
 
 Tuỳ chọn:
-- `pip install pymupdf` để dùng `scripts/pdf_visual_reader.py` (render PDF → PNG).
 - `pip install antlr4-python3-runtime` nếu chạy demo TyC trong `scripts/ppl_tyc_scope_binding.py`.
 
 ## Chạy nhanh (Windows / PowerShell)
@@ -95,25 +100,3 @@ Runner: `scripts/os_banker.py`
 
 Chẩn đoán khi UNSAT:
 - `blocked_initial/1`, `lacks_resource_now/2`, `can_run_now/1`
-
-## Tiện ích: Render PDF
-
-Nếu muốn render `report.pdf` ra ảnh để xem nhanh:
-
-```powershell
-pip install pymupdf
-python scripts\pdf_visual_reader.py report.pdf --pages 1-3 --zoom 2.0
-```
-
-Ảnh sẽ được ghi vào `report/_pdf_pages/` (mặc định).
-
-## Ghi chú
-
-- Repo ưu tiên tính “kiểm chứng tự động”: runner không chỉ chạy Clingo mà còn **so khớp atom kỳ vọng** cho từng case.
-- Nếu bạn muốn chạy Clingo trực tiếp trên một file `.lp`, chỉ cần:
-
-```powershell
-python -m clingo cases\ppl\global_only.lp 1
-```
-
-(Trong đó `1` nghĩa là lấy tối đa 1 stable model.)
