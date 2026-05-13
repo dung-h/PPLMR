@@ -1,0 +1,8 @@
+# Core dependency for running the ASP solvers via `python -m clingo`
+clingo>=5.6
+
+# Needed for `scripts/ppl_tyc_scope_binding.py` (TyC demo)
+antlr4-python3-runtime>=4.13
+
+# Needed for `scripts/pdf_visual_reader.py` (PDF rendering utility)
+PyMuPDF>=1.23
