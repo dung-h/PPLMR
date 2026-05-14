@@ -5,6 +5,11 @@ vendor/tyc/src/.DS_Store
 __pycache__/
 *.pyc
 AGENTS.md
+
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
 report/*.aux
 report/*.log
 report/*.out
