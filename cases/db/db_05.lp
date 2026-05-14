@@ -1,3 +1,8 @@
+% Case 05: strict_violation
+% Purpose: Two writers overlap on the same item before the first commit => not strict.
+% Expected: Produces stable model(s) with serialization/isolation properties.
+% Run: clingo db_05.lp 1
+%
 % Facts
 tx(t1). tx(t2).
 op(1,t1,w,a).

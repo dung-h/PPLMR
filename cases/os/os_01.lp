@@ -1,3 +1,8 @@
+% Case 01: safe_state_classic
+% Purpose: A larger textbook-style instance with five processes and three resources.
+% Expected: Safe execution sequence found (SAT) or no sequence exists (UNSAT).
+% Run: clingo os_01.lp 1
+%
 % Facts
 proc(p0). proc(p1). proc(p2). proc(p3). proc(p4).
 res(a). res(b). res(c).

@@ -1,3 +1,8 @@
+% Case 08: global_non_int
+% Purpose: A global variable with non-int type stays unbound but is still diagnosed.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_08.lp 1
+%
 % Facts
 variable(g).
 type_of(g, bool).

@@ -1,3 +1,8 @@
+% Case 01: global_only
+% Purpose: A variable without declaration becomes global.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_01.lp 1
+%
 % Facts
 variable(w).
 type_of(w, int).

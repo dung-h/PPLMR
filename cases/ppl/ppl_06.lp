@@ -1,3 +1,8 @@
+% Case 06: multi_decl
+% Purpose: Same variable declared in multiple functions.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_06.lp 1
+%
 % Facts
 variable(x).
 declared_in(x, foo).

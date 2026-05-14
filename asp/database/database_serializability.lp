@@ -1,3 +1,8 @@
+% Case serializability: serializable_chain
+% Purpose: Acyclic precedence graph with a straightforward serial order.
+% Expected: Produces stable model(s) with serialization/isolation properties.
+% Run: clingo database_serializability.lp 1
+%
 % Facts
 tx(t1). tx(t2). tx(t3).
 op(1,t1,r,a).

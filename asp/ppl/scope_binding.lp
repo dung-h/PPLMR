@@ -1,3 +1,8 @@
+% Case binding: baseline
+% Purpose: All variables are local with int types.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo scope_binding.lp 1
+%
 % Facts
 variable(x).
 variable(y).

@@ -1,3 +1,8 @@
+% Case 01: serializable_branching
+% Purpose: A four-transaction schedule with branching dependencies but no cycle.
+% Expected: Produces stable model(s) with serialization/isolation properties.
+% Run: clingo db_01.lp 1
+%
 % Facts
 tx(t1). tx(t2). tx(t3). tx(t4).
 op(1,t1,w,a).

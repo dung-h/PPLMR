@@ -204,8 +204,7 @@ Phần mở rộng này cho phép mô hình:
   \item Xử lý \textit{free variable}: điểm sử dụng không tới được khai báo nào.
   \item Xây dựng bảng ký hiệu tin cậy cho compiler của ngôn ngữ lexical (ví dụ Python, JavaScript).
 \end{itemize}
-Các ví dụ PPL cốt lõi trong báo cáo là các tình huống scope/binding tổng quát, không phụ thuộc ngôn ngữ cụ thể;
-TyC chỉ xuất hiện ở demo tích hợp frontend tùy chọn, dùng để sinh ASP facts tự động thay vì định nghĩa bài toán chính.
+Các ví dụ PPL cốt lõi trong báo cáo là các tình huống scope/binding tổng quát, không phụ thuộc ngôn ngữ cụ thể.
 Bài học chính từ tài liệu PPL là scope và binding dễ suy luận nhất khi được mô hình hóa dưới dạng quan hệ,
 thay vì thao tác ngăn xếp thủ tục~\cite{Gabbrielli2023}. Vì vậy, ASP của nhóm tách riêng
 \texttt{orphan\_declaration}, \texttt{missing\_scope}, và \texttt{free\_var} khỏi luật binding cốt lõi:
@@ -501,8 +500,7 @@ PPL chủ yếu dựa vào suy luận hậu duy (backward chaining) để rút r
         của ASP cho phân tích bảng ký hiệu.
   \item \textbf{Về nguồn gốc ý tưởng:} Phần mô hình scope/binding được truyền cảm hứng từ các công trình về mô hình ngôn ngữ (ví dụ
         \cite{Gabbrielli2023}) — chúng tôi áp dụng tư duy quan hệ (relations) chứ không cố gắng sao chép nguyên mẫu của bất cứ trình biên dịch
-        cụ thể nào. TyC chỉ là demo frontend để sinh facts; bản thân các test case là tổng quát và không phải là phiên bản sao nguyên vẹn của
-        một bài báo cụ thể.
+        cụ thể nào. Các test case là tổng quát và không phải là phiên bản sao nguyên vẹn của một bài báo cụ thể.
 \end{itemize}
 
 \subsubsection*{Mẫu 2: Khả năng truy cập đồ thị và phát hiện chu trình (Cơ sở dữ liệu)}
@@ -630,7 +628,7 @@ Mỗi ứng dụng đều vượt qua mức ví dụ đồ chơi nhờ việc đ
 \subsection*{Hướng phát triển tiếp theo}
 
 \begin{enumerate}
-    \item \textbf{Hướng PPL:} Tích hợp với frontend compiler thực (ví dụ TyC) để tự động sinh facts
+    \item \textbf{Hướng PPL:} Tích hợp với frontend compiler thực để tự động sinh facts
       từ mã nguồn và dùng ASP cho phân tích tĩnh toàn chương trình.
   
     \item \textbf{Hướng Database:} Bổ sung hỗ trợ multi-version concurrency control (MVCC)

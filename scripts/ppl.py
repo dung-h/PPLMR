@@ -1,4 +1,16 @@
-﻿import subprocess
+﻿"""
+Module: ppl.py
+Purpose: Runner for Principles of Programming Languages (PPL) scope/binding analysis via ASP.
+Description:
+  - Demonstrates lexical scoping, variable binding, and shadowing detection in programming languages.
+  - Uses Answer Set Programming (ASP) to model scope hierarchies and resolve variable uses to declarations.
+  - Implements core predicates: global_variable, local_variable, in_scope, bound_variable, shadowing, free_var.
+  - Generates 12 test cases covering untyped variables, missing scopes, orphan declarations, and free variable detection.
+  - Baseline case: asp/ppl/scope_binding.lp
+  - Test cases: cases/ppl/ppl_01.lp through ppl_12.lp
+"""
+
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -287,13 +299,37 @@ CASES: list[dict[str, object]] = [
 ]
 
 
-def generate_asp_file(path: Path, facts: str) -> None:
+def generate_asp_file(path: Path, name: str, description: str, facts: str) -> None:
+    """Generate ASP file with professional header comment.
+    
+    Args:
+        path: Output file path for the ASP program.
+        name: Case identifier (e.g., 'baseline', 'untyped').
+        description: Human-readable description of the test scenario.
+        facts: Input facts as multi-line string; substituted into BASE_RULES.
+    """
+    case_num = path.stem.split('_')[-1]  # e.g., "ppl_05" -> "05"
+    header = textwrap.dedent(f"""\
+        % Case {case_num}: {name}
+        % Purpose: {description}
+        % Expected: Binding and resolution predicates computed correctly.
+        % Run: clingo {path.name} 1
+        %
+        """)
     asp_code = BASE_RULES.format(facts=facts.strip())
-    path.write_text(asp_code, encoding="utf-8")
+    path.write_text(header + asp_code, encoding="utf-8")
     print(f"ASP file created: {path}")
 
 
 def run_clingo(asp_path: Path) -> tuple[str, str, int, list[str]]:
+    """Execute Clingo solver on an ASP program.
+    
+    Args:
+        asp_path: Path to the ASP file.
+    
+    Returns:
+        Tuple of (stdout, stderr, returncode, command_list).
+    """
     cmd = ["clingo", str(asp_path)]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
@@ -305,6 +341,14 @@ def run_clingo(asp_path: Path) -> tuple[str, str, int, list[str]]:
 
 
 def parse_models(output: str) -> list[str]:
+    """Parse stable models from Clingo output.
+    
+    Args:
+        output: Raw stdout from Clingo solver.
+    
+    Returns:
+        List of stable model strings (each line is space-separated atoms).
+    """
     lines = output.splitlines()
     models: list[str] = []
     i = 0
@@ -337,6 +381,16 @@ def check_expectations(
     expect_in: list[str],
     expect_out: list[str],
 ) -> list[str]:
+    """Verify that stable model atoms meet expectations.
+    
+    Args:
+        atoms: Set of atoms from a stable model.
+        expect_in: List of expected atoms (must be present).
+        expect_out: List of forbidden atoms (must not be present).
+    
+    Returns:
+        List of issue strings; empty list if all expectations met.
+    """
     issues: list[str] = []
     for exp in expect_in:
         if not expand_expected(exp, atoms):
@@ -348,6 +402,15 @@ def check_expectations(
 
 
 def analyze_results(case: dict[str, object], output: str) -> bool:
+    """Analyze Clingo output and verify case expectations.
+    
+    Args:
+        case: Test case dict containing name, description, expect_in, expect_out.
+        output: Raw Clingo stdout.
+    
+    Returns:
+        True if all expectations met, False otherwise.
+    """
     models = parse_models(output)
     if not models:
         print("No stable models found.")
@@ -379,7 +442,16 @@ def analyze_results(case: dict[str, object], output: str) -> bool:
 
 
 def main() -> None:
-    ASP_DIR.mkdir(parents=True, exist_ok=True)
+    """Execute all PPL test cases and report results.
+    
+    Workflow:
+      1. For each test case in CASES:
+         - Write ASP file (with header comment and BASE_RULES filled with facts)
+         - Invoke Clingo solver
+         - Parse stable models and verify against expectations
+         - Report PASS/FAIL
+      2. Print summary of passed/total cases.
+    """
     CASES_DIR.mkdir(parents=True, exist_ok=True)
 
     passed = 0
@@ -398,7 +470,7 @@ def main() -> None:
             case_idx += 1
             asp_path = CASES_DIR / f"ppl_{case_idx:02d}.lp"
 
-        generate_asp_file(asp_path, textwrap.dedent(facts))
+        generate_asp_file(asp_path, name, description, textwrap.dedent(facts))
 
         print(f"\n=== Case: {name} ===")
         print(description)

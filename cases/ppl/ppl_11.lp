@@ -1,3 +1,8 @@
+% Case 11: free_variable_use
+% Purpose: A variable used in a scope with no reachable declaration is a free variable.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_11.lp 1
+%
 % Facts
 function_scope(foo, s_foo).
 scope_parent(s_block, s_foo).

@@ -1,4 +1,17 @@
-﻿import subprocess
+﻿"""
+Module: db.py
+Purpose: Runner for Database Systems conflict-serializability and isolation level analysis via ASP.
+Description:
+  - Analyzes transaction schedules to detect conflicts and determine serializability via precedence graphs.
+  - Uses Answer Set Programming (ASP) to model read-write dependencies and topological ordering of transactions.
+  - Implements core predicates: conflict, edge, cycle, serializable, order.
+  - Supports enhanced isolation analysis: recoverable, cascadeless, strict schedules (with commit actions).
+  - Generates 9 test cases (6 core + 3 extended with isolation levels).
+  - Baseline case: asp/database/database_serializability.lp
+  - Test cases: cases/db/db_01.lp through db_09.lp
+"""
+
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -187,12 +200,36 @@ CASES: list[dict[str, object]] = [
 ]
 
 
-def write_case(path: Path, facts: str) -> None:
+def write_case(path: Path, name: str, description: str, facts: str) -> None:
+    """Write ASP file with professional header comment.
+    
+    Args:
+        path: Output file path for the ASP program.
+        name: Case identifier (e.g., 'serializable_chain', 'non_serializable_cycle').
+        description: Human-readable description of the schedule scenario.
+        facts: Transaction/operation facts; substituted into BASE_RULES.
+    """
+    case_num = path.stem.split('_')[-1]  # e.g., "db_05" -> "05"
+    header = textwrap.dedent(f"""\
+        % Case {case_num}: {name}
+        % Purpose: {description}
+        % Expected: Produces stable model(s) with serialization/isolation properties.
+        % Run: clingo {path.name} 1
+        %
+        """)
     code = BASE_RULES.replace("{facts}", facts.strip())
-    path.write_text(code, encoding="utf-8")
+    path.write_text(header + code, encoding="utf-8")
 
 
 def run_clingo(path: Path) -> tuple[str, str, int, list[str]]:
+    """Execute Clingo solver on an ASP program with one model.
+    
+    Args:
+        path: Path to the ASP file.
+    
+    Returns:
+        Tuple of (stdout, stderr, returncode, command_list).
+    """
     cmd = ["clingo", str(path), "1"]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
@@ -203,6 +240,14 @@ def run_clingo(path: Path) -> tuple[str, str, int, list[str]]:
 
 
 def parse_models(output: str) -> list[str]:
+    """Parse stable models from Clingo output.
+    
+    Args:
+        output: Raw stdout from Clingo solver.
+    
+    Returns:
+        List of stable model strings (each line is space-separated atoms).
+    """
     lines = output.splitlines()
     models: list[str] = []
     i = 0
@@ -225,6 +270,16 @@ def has_token(atoms: set[str], token: str) -> bool:
 
 
 def check_expectations(atoms: set[str], expect_in: list[str], expect_out: list[str]) -> list[str]:
+    """Verify that stable model atoms meet expectations.
+    
+    Args:
+        atoms: Set of atoms from a stable model.
+        expect_in: List of expected atoms/prefixes (must be present).
+        expect_out: List of forbidden atoms/prefixes (must not be present).
+    
+    Returns:
+        List of issue strings; empty list if all expectations met.
+    """
     issues: list[str] = []
     for token in expect_in:
         if not has_token(atoms, token):
@@ -236,6 +291,15 @@ def check_expectations(atoms: set[str], expect_in: list[str], expect_out: list[s
 
 
 def analyze_case(case: dict[str, object], output: str) -> bool:
+    """Analyze Clingo output and verify case expectations.
+    
+    Args:
+        case: Test case dict containing name, description, expect_in, expect_out.
+        output: Raw Clingo stdout.
+    
+    Returns:
+        True if all expectations met, False otherwise.
+    """
     models = parse_models(output)
     if not models:
         print("No stable model produced.")
@@ -261,7 +325,16 @@ def analyze_case(case: dict[str, object], output: str) -> bool:
 
 
 def main() -> None:
-    ASP_DIR.mkdir(parents=True, exist_ok=True)
+    """Execute all Database test cases and report results.
+    
+    Workflow:
+      1. For each test case in CASES:
+         - Write ASP file (with header comment and BASE_RULES filled with transaction/operation facts)
+         - Invoke Clingo solver
+         - Parse stable models and verify serializability/isolation properties
+         - Report PASS/FAIL
+      2. Print summary of passed/total cases.
+    """
     CASES_DIR.mkdir(parents=True, exist_ok=True)
 
     passed = 0
@@ -276,7 +349,7 @@ def main() -> None:
         else:
             case_idx += 1
             asp_path = CASES_DIR / f"db_{case_idx:02d}.lp"
-        write_case(asp_path, facts)
+        write_case(asp_path, name, description, facts)
 
         print(f"\n=== DB Case: {name} ===")
         print(description)

@@ -22,9 +22,7 @@ Nhóm 8:
   - `cases/ppl/` (scope/binding + lexical scoping)
   - `cases/db/` (serializability + isolation/recoverability)
   - `cases/os/` (safe/unsafe states)
-- `report/` — mã LaTeX của báo cáo.
-- `report.pdf` — bản PDF tổng hợp báo cáo.
-- `vendor/tyc/` — (tuỳ chọn) demo tích hợp với frontend/compiler TyC để sinh facts cho PPL.
+
 
 ## Yêu cầu
 
@@ -35,7 +33,8 @@ Nhóm 8:
   - Nếu bạn có sẵn `clingo` binary trong PATH thì cũng chạy được.
 
 Tuỳ chọn:
-- `pip install antlr4-python3-runtime` nếu chạy demo TyC trong `scripts/ppl_tyc_scope_binding.py`.
+- `pip install antlr4-python3-runtime` nếu muốn dùng các frontend compiler khác.
+- `pip install PyMuPDF` nếu muốn render PDF pages.
 
 ## Chạy nhanh (Windows / PowerShell)
 

@@ -1,3 +1,8 @@
+% Case 03: non_serializable_three_way
+% Purpose: A three-transaction schedule produces a longer dependency cycle.
+% Expected: Produces stable model(s) with serialization/isolation properties.
+% Run: clingo db_03.lp 1
+%
 % Facts
 tx(t1). tx(t2). tx(t3).
 op(1,t1,w,a).

@@ -1,3 +1,8 @@
+% Case 10: shadowing_nested_scope
+% Purpose: Nested lexical scopes: inner declaration shadows outer, and uses resolve to the closest declaration.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_10.lp 1
+%
 % Facts
 variable(x).
 type_of(x, int).

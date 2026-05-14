@@ -1,3 +1,8 @@
+% Case 03: unsafe_after_partial_progress
+% Purpose: One process can finish first, but the state still remains globally unsafe.
+% Expected: Safe execution sequence found (SAT) or no sequence exists (UNSAT).
+% Run: clingo os_03.lp 1
+%
 % Facts
 proc(p1). proc(p2). proc(p3).
 res(a). res(b).

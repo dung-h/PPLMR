@@ -1,3 +1,8 @@
+% Case 02: unsafe_state
+% Purpose: No safe sequence exists, so the program is UNSAT.
+% Expected: Safe execution sequence found (SAT) or no sequence exists (UNSAT).
+% Run: clingo os_02.lp 1
+%
 % Facts
 proc(p1). proc(p2).
 res(cpu). res(io).

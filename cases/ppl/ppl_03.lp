@@ -1,3 +1,8 @@
+% Case 03: non_int_type
+% Purpose: Non-int types should not be bound.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_03.lp 1
+%
 % Facts
 variable(v).
 declared_in(v, foo).

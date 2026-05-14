@@ -1,3 +1,8 @@
+% Case 04: recoverable_violation
+% Purpose: Serializable schedule but not recoverable/cascadeless due to early commit after dirty read.
+% Expected: Produces stable model(s) with serialization/isolation properties.
+% Run: clingo db_04.lp 1
+%
 % Facts
 tx(t1). tx(t2).
 op(1,t1,w,a).

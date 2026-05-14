@@ -1,3 +1,8 @@
+% Case 07: mixed_global_local
+% Purpose: Mix of local and global variables.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_07.lp 1
+%
 % Facts
 variable(a).
 variable(b).

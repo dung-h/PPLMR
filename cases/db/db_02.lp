@@ -1,3 +1,8 @@
+% Case 02: non_serializable_cycle
+% Purpose: Two transactions create a direct cycle in the precedence graph.
+% Expected: Produces stable model(s) with serialization/isolation properties.
+% Run: clingo db_02.lp 1
+%
 % Facts
 tx(t1). tx(t2).
 op(1,t1,w,a).

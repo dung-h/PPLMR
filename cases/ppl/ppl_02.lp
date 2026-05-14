@@ -1,3 +1,8 @@
+% Case 02: untyped
+% Purpose: Declared variable without a type is not bound.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_02.lp 1
+%
 % Facts
 variable(u).
 declared_in(u, foo).

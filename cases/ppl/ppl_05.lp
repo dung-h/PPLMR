@@ -1,3 +1,8 @@
+% Case 05: orphan_declaration
+% Purpose: Declaration without a variable fact.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_05.lp 1
+%
 % Facts
 declared_in(q, foo).
 function_scope(foo, f1).

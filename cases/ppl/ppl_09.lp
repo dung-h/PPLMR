@@ -1,3 +1,8 @@
+% Case 09: mixed_diagnostics
+% Purpose: One case combines local binding, global non-int data, and orphan declarations.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_09.lp 1
+%
 % Facts
 variable(a).
 variable(b).

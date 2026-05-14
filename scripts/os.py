@@ -1,4 +1,17 @@
-﻿import subprocess
+﻿"""
+Module: os.py
+Purpose: Runner for Operating Systems Banker algorithm (safe state detection) via ASP.
+Description:
+  - Models the Banker's algorithm to detect safe vs unsafe states in resource allocation.
+  - Uses Answer Set Programming (ASP) to compute safe execution sequences that avoid deadlock.
+  - Implements core predicates: need, available, run, finished_before, returned.
+  - Supports diagnostics: can_run_now, blocked_initial, lacks_resource_now.
+  - Generates 7 test cases (4 core + 3 extended scenarios).
+  - Baseline case: asp/os/os_banker.lp
+  - Test cases: cases/os/os_01.lp through os_07.lp
+"""
+
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -135,12 +148,36 @@ CASES: list[dict[str, object]] = [
 ]
 
 
-def write_case(path: Path, facts: str) -> None:
+def write_case(path: Path, name: str, description: str, facts: str) -> None:
+    """Write ASP file with professional header comment.
+    
+    Args:
+        path: Output file path for the ASP program.
+        name: Case identifier (e.g., 'safe_state', 'unsafe_state').
+        description: Human-readable description of the resource allocation scenario.
+        facts: Process/resource/allocation facts; substituted into BASE_RULES.
+    """
+    case_num = path.stem.split('_')[-1]  # e.g., "os_02" -> "02"
+    header = textwrap.dedent(f"""\
+        % Case {case_num}: {name}
+        % Purpose: {description}
+        % Expected: Safe execution sequence found (SAT) or no sequence exists (UNSAT).
+        % Run: clingo {path.name} 1
+        %
+        """)
     code = BASE_RULES.replace("{facts}", facts.strip())
-    path.write_text(code, encoding="utf-8")
+    path.write_text(header + code, encoding="utf-8")
 
 
 def run_clingo(path: Path) -> tuple[str, str, int, list[str]]:
+    """Execute Clingo solver on an ASP program with one model.
+    
+    Args:
+        path: Path to the ASP file.
+    
+    Returns:
+        Tuple of (stdout, stderr, returncode, command_list).
+    """
     cmd = ["clingo", str(path), "1"]
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
@@ -151,6 +188,14 @@ def run_clingo(path: Path) -> tuple[str, str, int, list[str]]:
 
 
 def parse_models(output: str) -> list[str]:
+    """Parse stable models from Clingo output.
+    
+    Args:
+        output: Raw stdout from Clingo solver.
+    
+    Returns:
+        List of stable model strings (each line is space-separated atoms).
+    """
     lines = output.splitlines()
     models: list[str] = []
     i = 0
@@ -167,6 +212,15 @@ def parse_models(output: str) -> list[str]:
 
 
 def analyze_case(case: dict[str, object], output: str) -> bool:
+    """Analyze Clingo output and verify case expectations.
+    
+    Args:
+        case: Test case dict containing name, description, expect_model, expect_in.
+        output: Raw Clingo stdout.
+    
+    Returns:
+        True if expectations met (SAT case has model & atoms match, UNSAT case has no model), False otherwise.
+    """
     expect_model = bool(case.get("expect_model", True))
     models = parse_models(output)
     has_model = len(models) > 0
@@ -209,7 +263,16 @@ def analyze_case(case: dict[str, object], output: str) -> bool:
 
 
 def main() -> None:
-    ASP_DIR.mkdir(parents=True, exist_ok=True)
+    """Execute all OS Banker algorithm test cases and report results.
+    
+    Workflow:
+      1. For each test case in CASES:
+         - Write ASP file (with header comment and BASE_RULES filled with process/resource/allocation facts)
+         - Invoke Clingo solver
+         - Parse stable models and verify safe sequence exists or correctly reports UNSAT
+         - Report PASS/FAIL
+      2. Print summary of passed/total cases.
+    """
     CASES_DIR.mkdir(parents=True, exist_ok=True)
 
     passed = 0
@@ -224,7 +287,7 @@ def main() -> None:
         else:
             case_idx += 1
             asp_path = CASES_DIR / f"os_{case_idx:02d}.lp"
-        write_case(asp_path, facts)
+        write_case(asp_path, name, description, facts)
 
         print(f"\n=== OS Case: {name} ===")
         print(description)

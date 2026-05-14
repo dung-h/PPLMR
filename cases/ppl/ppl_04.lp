@@ -1,3 +1,8 @@
+% Case 04: missing_function_scope
+% Purpose: Declared in a function without scope mapping.
+% Expected: Binding and resolution predicates computed correctly.
+% Run: clingo ppl_04.lp 1
+%
 % Facts
 variable(k).
 declared_in(k, missing).

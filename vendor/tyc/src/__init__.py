@@ -1,3 +1,0 @@
-"""
-TyC Compiler Source Code
-"""

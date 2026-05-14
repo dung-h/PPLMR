@@ -1,3 +1,8 @@
+% Case banker: safe_state
+% Purpose: At least one safe execution sequence exists.
+% Expected: Safe execution sequence found (SAT) or no sequence exists (UNSAT).
+% Run: clingo os_banker.lp 1
+%
 % Facts
 proc(p1). proc(p2). proc(p3).
 res(cpu). res(io).
