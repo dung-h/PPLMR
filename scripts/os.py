@@ -213,12 +213,17 @@ def main() -> None:
     CASES_DIR.mkdir(parents=True, exist_ok=True)
 
     passed = 0
+    case_idx = 0
     for case in CASES:
         name = str(case["name"])
         description = str(case["description"])
         facts = textwrap.dedent(str(case["facts"]))
 
-        asp_path = ASP_DIR / BASE_FILENAME if name == "safe_state" else CASES_DIR / f"{name}.lp"
+        if name == "safe_state":
+            asp_path = ASP_DIR / BASE_FILENAME
+        else:
+            case_idx += 1
+            asp_path = CASES_DIR / f"os_{case_idx:02d}.lp"
         write_case(asp_path, facts)
 
         print(f"\n=== OS Case: {name} ===")

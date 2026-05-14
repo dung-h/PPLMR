@@ -385,6 +385,8 @@ def main() -> None:
     passed = 0
     total = len(CASES)
 
+    case_idx = 0
+
     for case in CASES:
         name = str(case["name"])
         description = str(case["description"])
@@ -393,7 +395,8 @@ def main() -> None:
         if name == "baseline":
             asp_path = ASP_DIR / ASP_FILENAME
         else:
-            asp_path = CASES_DIR / f"{name}.lp"
+            case_idx += 1
+            asp_path = CASES_DIR / f"ppl_{case_idx:02d}.lp"
 
         generate_asp_file(asp_path, textwrap.dedent(facts))
 
