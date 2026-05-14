@@ -50,9 +50,9 @@ pip install clingo
 Chạy 3 ứng dụng:
 
 ```powershell
-python scripts\scope_binding.py
-python scripts\db_serializability.py
-python scripts\os_banker.py
+python scripts\ppl_01.py
+python scripts\db_01.py
+python scripts\os_01.py
 ```
 
 Mỗi runner sẽ:
@@ -62,7 +62,7 @@ Mỗi runner sẽ:
 
 ## Ứng dụng 1 — PPL: Scope & Binding
 
-Runner: `scripts/scope_binding.py`
+Runner: `scripts/ppl_01.py`
 
 Các predicate tiêu biểu trong output:
 - `global_variable/1`, `local_variable/2`
@@ -78,7 +78,7 @@ Phần nâng cao (lexical scoping):
 
 ## Ứng dụng 2 — Database: Conflict-Serializability (+ isolation)
 
-Runner: `scripts/db_serializability.py`
+Runner: `scripts/db_01.py`
 
 Đầu ra chính:
 - `edge/2`, `cycle/1`
@@ -93,7 +93,7 @@ Nếu input có `commit` (`op(I,T,c,none).`) thì bật phân tích mở rộng:
 
 ## Ứng dụng 3 — OS: Banker safe sequence
 
-Runner: `scripts/os_banker.py`
+Runner: `scripts/os_01.py`
 
 Đầu ra chính:
 - `run/2` (thứ tự chạy), `need/3`, `available/3`
